@@ -5,15 +5,11 @@ pipeline {
         nodejs "NodeJS_20"
     }
 
-    environment {
-        DEPLOY_SERVER = "ubuntu@13.218.141.9"
-        APP_DIR = "/root/jenkins-nodejs-demo"
-    }
-
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/manojvipl/Jenkins-Demo-Project.git'
+                git branch: 'main',
+                    url: 'https://github.com/manojvipl/Jenkins-Demo-Project.git'
             }
         }
 
@@ -25,21 +21,20 @@ pipeline {
 
         stage('Build Application') {
             steps {
-                sh 'npm run build || echo "No build step configured"'
+                sh 'npm run build'
             }
         }
 
-        stage('Deploy to EC2 Server') {
+        stage('Deploy Locally') {
             steps {
-                sshagent(['ec2-ssh-key']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no $DEPLOY_SERVER '
-                            cd $APP_DIR &&
-                            git pull &&
-                            npm install &&
-                            pm2 restart my-app || pm2 start app.js --name my-app
-                        '
-                    """
+                script {
+                    echo "Deploying NodeJS App on same EC2 server..."
+                    // Stop any existing process running on port 3000 (optional)
+                    sh 'pm2 delete jenkins-demo || true'
+                    // Start app using PM2
+                    sh 'pm2 start server.js --name jenkins-demo'
+                    // Save PM2 list so app auto-starts after reboot
+                    sh 'pm2 save'
                 }
             }
         }
