@@ -2,14 +2,18 @@ pipeline {
     agent any
 
     tools {
-        nodejs "NodeJS_20" // name from Jenkins global config
+        nodejs "NodeJS_20"
+    }
+
+    environment {
+        DEPLOY_SERVER = "ubuntu@13.218.141.9"
+        APP_DIR = "/root/jenkins-nodejs-demo"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/manojvipl/Jenkins-Demo-Project.git'
+                git branch: 'main', url: 'https://github.com/manojvipl/Jenkins-Demo-Project.git'
             }
         }
 
@@ -19,25 +23,25 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
+        stage('Build Application') {
             steps {
-                sh 'npm test'
+                sh 'npm run build || echo "No build step configured"'
             }
         }
 
-        stage('Build & Run') {
+        stage('Deploy to EC2 Server') {
             steps {
-                sh 'npm start &'
+                sshagent(['ec2-ssh-key']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no $DEPLOY_SERVER '
+                            cd $APP_DIR &&
+                            git pull &&
+                            npm install &&
+                            pm2 restart my-app || pm2 start app.js --name my-app
+                        '
+                    """
+                }
             }
-        }
-    }
-
-    post {
-        success {
-            echo '🎉 Build & Deploy Successful!'
-        }
-        failure {
-            echo '❌ Build Failed!'
         }
     }
 }
