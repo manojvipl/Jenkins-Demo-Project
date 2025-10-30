@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "build": "echo 'Build step not required for NodeJS app'",
     "test": "echo \"No tests yet\" && exit 0"
   },
   "keywords": [],
